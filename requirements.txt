@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-docx
+latex2mathml
+mathml2omml
+lxml

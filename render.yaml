@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: math-bank-word
+    runtime: python
+    plan: free
+    rootDir: word-export-server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: WORD_EXPORT_TOKEN
+        sync: false          # 在 Render 后台手动填你的口令
+      - key: PAGES_BASE
+        value: https://math-bank.pages.dev
