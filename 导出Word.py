@@ -333,6 +333,17 @@ _QNUM = re.compile(r'^[\s　]*(?:第?\s*\d+\s*[.．、）)题]\s*|[（(]\s*\d+\s
 def _strip_qnum(t):
     return _QNUM.sub('', t or '')
 
+# 去掉题面开头的「（X分）」分值 与「（2022·…）」出处（不影响坐标/小题号/普通括注）
+_META = re.compile(r'^[\s　]*(?:[（(]\s*\d+(?:\.\d+)?\s*分\s*[）)]'
+                   r'|[（(][^（）()]*(?:[·•]|\d{4})[^（）()]*[）)])\s*')
+def _strip_meta(t):
+    t = t or ''
+    while True:
+        n = _META.sub('', t)
+        if n == t:
+            return n
+        t = n
+
 # ────────────────────────── 文档组装 ──────────────────────────
 ANSWER_SPACE = {'解答题': 4, '解答压轴题': 5, '证明题': 4, '综合题': 5, '计算题': 3}
 # 题型在卷内的细排序：选择→选择压轴→填空→填空压轴→解答→解答压轴→证明→综合…
@@ -363,7 +374,7 @@ def _set_cn_font(doc, name='宋体', size=11):
     st.element.rPr.rFonts.set(qn('w:eastAsia'), name)
 
 def _render_question(doc, q, idx, with_answers):
-    text = _strip_qnum(q.get('text', ''))
+    text = _strip_meta(_strip_qnum(q.get('text', '')))
     p = doc.add_paragraph()
     p.add_run(f'{idx}．').bold = True
     sc = _split_choices(text) if q.get('type') in ('选择题', '选择压轴题') else None
