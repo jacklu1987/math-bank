@@ -21,20 +21,28 @@ PAGES_BASE = os.environ.get('PAGES_BASE', 'https://math-bank.pages.dev').rstrip(
 TOKEN = os.environ.get('WORD_EXPORT_TOKEN', '')
 
 # —— 图片解析：从图床按需抓取 + 进程内缓存 ——
+# 带浏览器 UA，避免 Cloudflare 把默认 Python-urllib 当机器人拦掉（403）。
 _cache = {}
+_UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+       '(KHTML, like Gecko) Chrome/124.0 Safari/537.36')
 def fetch_image(ref):
     name = (ref or '').split('/')[-1]
     if not name:
         return None
     if name in _cache:
         return _cache[name]
-    try:
-        with urllib.request.urlopen(f'{PAGES_BASE}/images/{name}', timeout=20) as r:
-            data = r.read()
-    except Exception:
-        return None
-    _cache[name] = data
-    return data
+    url = f'{PAGES_BASE}/images/{name}'
+    for _ in range(2):
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': _UA, 'Accept': 'image/*,*/*'})
+            with urllib.request.urlopen(req, timeout=25) as r:
+                data = r.read()
+            if data and len(data) > 100:        # 像真图片（排除被拦返回的小页面）
+                _cache[name] = data
+                return data
+        except Exception:
+            pass
+    return None
 W.IMAGE_BYTES = fetch_image
 
 app = FastAPI(title='题库Word导出')
